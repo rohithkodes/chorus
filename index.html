@@ -30,197 +30,140 @@
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 13px; }
-
     #app { display: flex; flex-direction: column; height: 100vh; }
 
     /* ── Header ── */
     #header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
+      display: flex; align-items: center; gap: 16px;
       padding: 10px 20px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
       -webkit-app-region: drag;
     }
-    #header .logo {
-      font-family: var(--display);
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      color: #fff;
-      -webkit-app-region: no-drag;
-    }
+    #header .logo { font-family: var(--display); font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: #fff; -webkit-app-region: no-drag; }
     #header .logo span { color: var(--c1); }
     #header .status { font-size: 11px; color: var(--text-dim); margin-left: 4px; }
     #header .status.live::before {
-      content: '';
-      display: inline-block;
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: #34d399;
-      margin-right: 6px;
-      animation: pulse 1.8s ease-in-out infinite;
+      content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: #34d399; margin-right: 6px; animation: pulse 1.8s ease-in-out infinite;
     }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
     #header .spacer { flex: 1; }
     #header .controls { display: flex; gap: 8px; align-items: center; -webkit-app-region: no-drag; }
 
-    .btn {
-      background: var(--border);
-      border: 1px solid var(--muted);
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 11px;
-      padding: 4px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-    }
+    .btn { background: var(--border); border: 1px solid var(--muted); color: var(--text); font-family: var(--mono); font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
     .btn:hover { background: var(--muted); border-color: var(--text-dim); }
     .btn.active { background: #1e2d45; border-color: var(--c1); color: var(--c1); }
     .btn.danger:hover { background: #2d1a1a; border-color: var(--col-error); color: var(--col-error); }
 
-    /* Snap window control */
-    .snap-control {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      color: var(--text-dim);
-      -webkit-app-region: no-drag;
-    }
-    .snap-control input {
-      width: 52px;
-      background: var(--border);
-      border: 1px solid var(--muted);
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 11px;
-      padding: 3px 6px;
-      border-radius: 4px;
-      text-align: right;
-    }
+    .snap-control { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); -webkit-app-region: no-drag; }
+    .snap-control input { width: 52px; background: var(--border); border: 1px solid var(--muted); color: var(--text); font-family: var(--mono); font-size: 11px; padding: 3px 6px; border-radius: 4px; text-align: right; }
     .snap-control input:focus { outline: none; border-color: var(--c1); }
 
     .filter-group { display: flex; gap: 4px; -webkit-app-region: no-drag; }
-    .pill {
-      padding: 3px 10px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      font-size: 11px;
-      cursor: pointer;
-      color: var(--text-dim);
-      transition: all 0.15s;
-    }
+    .pill { padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); font-size: 11px; cursor: pointer; color: var(--text-dim); transition: all 0.15s; }
     .pill:hover { border-color: var(--muted); color: var(--text); }
     .pill.active-log     { border-color: var(--col-log);     color: var(--col-log);     background: #1a1e28; }
     .pill.active-warning { border-color: var(--col-warning); color: var(--col-warning); background: #211e10; }
     .pill.active-error   { border-color: var(--col-error);   color: var(--col-error);   background: #201414; }
     .pill.active-photon  { border-color: var(--col-photon);  color: var(--col-photon);  background: #161828; }
 
-    /* ── Columns ── */
-    #columns-wrapper { flex: 1; display: flex; overflow-y: auto; }
-    #columns-wrapper::-webkit-scrollbar { width: 4px; }
-    #columns-wrapper::-webkit-scrollbar-track { background: transparent; }
-    #columns-wrapper::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
-
-    #empty {
+    /* ── Grid layout ── */
+    #grid-container {
       flex: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
+      overflow: hidden;
+    }
+
+    /* Sticky header row */
+    #grid-headers {
+      display: grid;
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+    .grid-header-cell {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      border-right: 1px solid var(--border);
+    }
+    .grid-header-cell:last-child { border-right: none; }
+    .time-header { color: var(--text-dim); font-size: 10px; justify-content: center; }
+
+    /* Scrollable grid body */
+    #grid-scroll {
+      flex: 1;
+      overflow-y: auto;
+    }
+    #grid-scroll::-webkit-scrollbar { width: 4px; }
+    #grid-scroll::-webkit-scrollbar-track { background: transparent; }
+    #grid-scroll::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+
+    #grid-body { display: grid; }
+
+    /* Each grid-row spans all columns as a sub-grid */
+    .grid-row {
+      display: contents;
+    }
+    .grid-row.is-snapped > .grid-cell {
+      background: #ffffff05;
+    }
+    .grid-row.is-snapped > .grid-cell:not(.empty):hover {
+      background: #ffffff0d;
+    }
+
+    /* Time cell — first column of every row */
+    .grid-time {
       color: var(--text-dim);
+      font-size: 10px;
+      padding: 3px 8px;
+      display: flex;
+      align-items: flex-start;
+      padding-top: 5px;
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    /* Log cell */
+    .grid-cell {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 3px 12px;
+      border-left: 2px solid transparent;
+      border-right: 1px solid var(--border);
+      min-height: 22px;
+      word-break: break-word;
+    }
+    .grid-cell:last-child { border-right: none; }
+    .grid-cell.empty { min-height: 22px; }
+    .grid-cell.type-error   { border-left-color: var(--col-error); }
+    .grid-cell.type-warning { border-left-color: var(--col-warning); }
+    .grid-cell.type-photon  { border-left-color: var(--col-photon); }
+
+    .log-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.6px; border: 1px solid; border-radius: 3px; padding: 1px 4px; white-space: nowrap; align-self: center; opacity: 0.8; flex-shrink: 0; }
+    .log-msg { font-size: 11.5px; color: var(--col-log); flex: 1; line-height: 1.5; }
+    .grid-cell.type-warning .log-msg { color: var(--col-warning); }
+    .grid-cell.type-error   .log-msg { color: var(--col-error); }
+    .grid-cell.type-photon  .log-msg { color: var(--col-photon); }
+
+    /* Column name / dot / count shared styles */
+    .col-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .col-name  { font-size: 12px; font-weight: 600; letter-spacing: 0.3px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .col-count { font-size: 10px; color: var(--text-dim); background: var(--border); padding: 1px 6px; border-radius: 10px; }
+
+    /* ── Empty state ── */
+    #empty {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-dim);
     }
     #empty .icon { font-size: 40px; opacity: 0.3; }
     #empty .label { font-size: 13px; }
     #empty .sub { font-size: 11px; opacity: 0.6; }
 
-    .client-col {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      border-right: 1px solid var(--border);
-      min-width: 0;
-      min-height: 100%;
-      animation: fadeIn 0.25s ease;
-    }
-    .client-col:last-child { border-right: none; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-
-    .col-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .col-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .col-name { font-size: 12px; font-weight: 600; letter-spacing: 0.3px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .col-count { font-size: 10px; color: var(--text-dim); background: var(--border); padding: 1px 6px; border-radius: 10px; }
-
-    .col-logs { flex: 1; padding: 6px 0; }
-
-    /* ── Log entry ── */
-    .log-entry {
-      display: flex;
-      gap: 8px;
-      padding: 3px 12px;
-      line-height: 1.5;
-      border-left: 2px solid transparent;
-      transition: background 0.1s;
-    }
-    .log-entry:hover { background: #ffffff08; }
-    .log-entry.type-error   { border-left-color: var(--col-error); }
-    .log-entry.type-warning { border-left-color: var(--col-warning); }
-    .log-entry.type-photon  { border-left-color: var(--col-photon); }
-    .log-entry.type-photon:hover { background: #16182a; }
-
-    /* Snapped rows get a subtle horizontal highlight */
-    .log-entry.is-snapped { background: #ffffff05; }
-    .log-entry.is-snapped:hover { background: #ffffff0d; }
-
-    /* Invisible spacer inserted in columns missing a snapped event */
-    .snap-spacer { width: 100%; }
-
-    /* Tag badge e.g. NETWORK, STATE, INIT */
-    .log-tag {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.6px;
-      border: 1px solid;
-      border-radius: 3px;
-      padding: 1px 4px;
-      white-space: nowrap;
-      align-self: center;
-      opacity: 0.8;
-      flex-shrink: 0;
-    }
-
-    .log-time { color: var(--text-dim); font-size: 10px; white-space: nowrap; padding-top: 1px; min-width: 52px; }
-    .log-msg { font-size: 11.5px; color: var(--col-log); word-break: break-word; flex: 1; }
-    .log-entry.type-warning .log-msg { color: var(--col-warning); }
-    .log-entry.type-error   .log-msg { color: var(--col-error); }
-    .log-entry.type-photon  .log-msg { color: var(--col-photon); }
-
     /* ── Paused banner ── */
-    #paused-banner {
-      display: none;
-      text-align: center;
-      padding: 6px;
-      background: #1a1400;
-      border-top: 1px solid #facc1540;
-      color: var(--col-warning);
-      font-size: 11px;
-      letter-spacing: 1px;
-      flex-shrink: 0;
-    }
+    #paused-banner { display: none; text-align: center; padding: 6px; background: #1a1400; border-top: 1px solid #facc1540; color: var(--col-warning); font-size: 11px; letter-spacing: 1px; flex-shrink: 0; }
     #paused-banner.visible { display: block; }
   </style>
 </head>
@@ -231,24 +174,18 @@
     <div class="logo">Pun<span>Scope</span></div>
     <div class="status" id="status-indicator">waiting for clients...</div>
     <div class="spacer"></div>
-
-    <!-- Snap window -->
     <div class="snap-control">
       snap
       <input type="number" id="snap-window-input" value="1000" min="0" step="100"
              onchange="setSnapWindow(parseInt(this.value) || 0)" />
       ms
     </div>
-
-    <!-- Type filters -->
     <div class="filter-group">
       <div class="pill active-log"     data-type="log"     onclick="toggleFilter(this)">log</div>
       <div class="pill active-warning" data-type="warning" onclick="toggleFilter(this)">warn</div>
       <div class="pill active-error"   data-type="error"   onclick="toggleFilter(this)">error</div>
       <div class="pill active-photon"  data-type="photon"  onclick="toggleFilter(this)">photon</div>
     </div>
-
-    <!-- Actions -->
     <div class="controls">
       <button class="btn danger" onclick="newSession()">New Session</button>
       <button class="btn" onclick="saveSession()">Save</button>
@@ -259,11 +196,17 @@
     </div>
   </div>
 
-  <div id="columns-wrapper">
-    <div id="empty">
-      <div class="icon">◈</div>
-      <div class="label">No clients connected yet</div>
-      <div class="sub">Add PunScopeLogger.cs to your Unity scene and press Play</div>
+  <div id="grid-container">
+    <div id="grid-headers">
+      <div class="grid-header-cell time-header">time</div>
+    </div>
+    <div id="grid-scroll">
+      <div id="empty">
+        <div class="icon">◈</div>
+        <div class="label">No clients connected yet</div>
+        <div class="sub">Add PunScopeLogger.cs to your Unity scene and press Play</div>
+      </div>
+      <div id="grid-body"></div>
     </div>
   </div>
 
