@@ -7,7 +7,6 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@700;800&display=swap');
 
-    /* ── Variables ─────────────────────────────────────────────────────────── */
     :root {
       --bg:        #0d0f14;
       --surface:   #13161e;
@@ -17,30 +16,24 @@
       --text-dim:  #565d74;
       --mono:      'JetBrains Mono', monospace;
       --display:   'Syne', sans-serif;
-
-      /* Client accent colors */
-      --c1: #4fc3f7;   /* sky blue   */
-      --c2: #a78bfa;   /* violet     */
-      --c3: #34d399;   /* emerald    */
-      --c4: #fb923c;   /* amber      */
-      --c5: #f472b6;   /* pink       */
-      --c6: #facc15;   /* yellow     */
-
-      /* Log type colors */
+      --c1: #4fc3f7;
+      --c2: #a78bfa;
+      --c3: #34d399;
+      --c4: #fb923c;
+      --c5: #f472b6;
+      --c6: #facc15;
       --col-log:     #c8cdd8;
       --col-warning: #facc15;
       --col-error:   #f87171;
       --col-photon:  #818cf8;
     }
 
-    /* ── Reset ─────────────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 13px; }
 
-    /* ── Layout ─────────────────────────────────────────────────────────────── */
     #app { display: flex; flex-direction: column; height: 100vh; }
 
-    /* ── Header ─────────────────────────────────────────────────────────────── */
+    /* ── Header ── */
     #header {
       display: flex;
       align-items: center;
@@ -60,11 +53,7 @@
       -webkit-app-region: no-drag;
     }
     #header .logo span { color: var(--c1); }
-    #header .status {
-      font-size: 11px;
-      color: var(--text-dim);
-      margin-left: 4px;
-    }
+    #header .status { font-size: 11px; color: var(--text-dim); margin-left: 4px; }
     #header .status.live::before {
       content: '';
       display: inline-block;
@@ -74,15 +63,11 @@
       margin-right: 6px;
       animation: pulse 1.8s ease-in-out infinite;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.3; }
-    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
     #header .spacer { flex: 1; }
+    #header .controls { display: flex; gap: 8px; align-items: center; -webkit-app-region: no-drag; }
 
-    /* Controls */
-    #header .controls { display: flex; gap: 8px; -webkit-app-region: no-drag; }
     .btn {
       background: var(--border);
       border: 1px solid var(--muted);
@@ -98,7 +83,28 @@
     .btn.active { background: #1e2d45; border-color: var(--c1); color: var(--c1); }
     .btn.danger:hover { background: #2d1a1a; border-color: var(--col-error); color: var(--col-error); }
 
-    /* Filter pills */
+    /* Snap window control */
+    .snap-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-dim);
+      -webkit-app-region: no-drag;
+    }
+    .snap-control input {
+      width: 52px;
+      background: var(--border);
+      border: 1px solid var(--muted);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      text-align: right;
+    }
+    .snap-control input:focus { outline: none; border-color: var(--c1); }
+
     .filter-group { display: flex; gap: 4px; -webkit-app-region: no-drag; }
     .pill {
       padding: 3px 10px;
@@ -115,14 +121,12 @@
     .pill.active-error   { border-color: var(--col-error);   color: var(--col-error);   background: #201414; }
     .pill.active-photon  { border-color: var(--col-photon);  color: var(--col-photon);  background: #161828; }
 
-    /* ── Columns container ──────────────────────────────────────────────────── */
-    #columns-wrapper {
-      flex: 1;
-      display: flex;
-      overflow: hidden;
-    }
+    /* ── Columns ── */
+    #columns-wrapper { flex: 1; display: flex; overflow-y: auto; }
+    #columns-wrapper::-webkit-scrollbar { width: 4px; }
+    #columns-wrapper::-webkit-scrollbar-track { background: transparent; }
+    #columns-wrapper::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
 
-    /* ── Empty state ────────────────────────────────────────────────────────── */
     #empty {
       flex: 1;
       display: flex;
@@ -136,13 +140,13 @@
     #empty .label { font-size: 13px; }
     #empty .sub { font-size: 11px; opacity: 0.6; }
 
-    /* ── Client column ──────────────────────────────────────────────────────── */
     .client-col {
       flex: 1;
       display: flex;
       flex-direction: column;
       border-right: 1px solid var(--border);
       min-width: 0;
+      min-height: 100%;
       animation: fadeIn 0.25s ease;
     }
     .client-col:last-child { border-right: none; }
@@ -157,39 +161,13 @@
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
-    .col-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .col-name {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .col-count {
-      font-size: 10px;
-      color: var(--text-dim);
-      background: var(--border);
-      padding: 1px 6px;
-      border-radius: 10px;
-    }
+    .col-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .col-name { font-size: 12px; font-weight: 600; letter-spacing: 0.3px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .col-count { font-size: 10px; color: var(--text-dim); background: var(--border); padding: 1px 6px; border-radius: 10px; }
 
-    .col-logs {
-      flex: 1;
-      overflow-y: auto;
-      padding: 6px 0;
-      scroll-behavior: smooth;
-    }
-    .col-logs::-webkit-scrollbar { width: 4px; }
-    .col-logs::-webkit-scrollbar-track { background: transparent; }
-    .col-logs::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .col-logs { flex: 1; padding: 6px 0; }
 
-    /* ── Log entry ──────────────────────────────────────────────────────────── */
+    /* ── Log entry ── */
     .log-entry {
       display: flex;
       gap: 8px;
@@ -199,30 +177,25 @@
       transition: background 0.1s;
     }
     .log-entry:hover { background: #ffffff08; }
-
-    .log-entry.type-error   { border-left-color: var(--col-error);   }
+    .log-entry.type-error   { border-left-color: var(--col-error); }
     .log-entry.type-warning { border-left-color: var(--col-warning); }
-    .log-entry.type-photon  { border-left-color: var(--col-photon);  background: #13152200; }
+    .log-entry.type-photon  { border-left-color: var(--col-photon); }
     .log-entry.type-photon:hover { background: #16182a; }
 
-    .log-time {
-      color: var(--text-dim);
-      font-size: 10px;
-      white-space: nowrap;
-      padding-top: 1px;
-      min-width: 52px;
-    }
-    .log-msg {
-      font-size: 11.5px;
-      color: var(--col-log);
-      word-break: break-word;
-      flex: 1;
-    }
-    .log-entry.type-warning .log-msg { color: var(--col-warning); }
-    .log-entry.type-error   .log-msg { color: var(--col-error);   }
-    .log-entry.type-photon  .log-msg { color: var(--col-photon);  }
+    /* Snapped rows get a subtle horizontal highlight */
+    .log-entry.is-snapped { background: #ffffff05; }
+    .log-entry.is-snapped:hover { background: #ffffff0d; }
 
-    /* ── Paused banner ──────────────────────────────────────────────────────── */
+    /* Invisible spacer inserted in columns missing a snapped event */
+    .snap-spacer { width: 100%; }
+
+    .log-time { color: var(--text-dim); font-size: 10px; white-space: nowrap; padding-top: 1px; min-width: 52px; }
+    .log-msg { font-size: 11.5px; color: var(--col-log); word-break: break-word; flex: 1; }
+    .log-entry.type-warning .log-msg { color: var(--col-warning); }
+    .log-entry.type-error   .log-msg { color: var(--col-error); }
+    .log-entry.type-photon  .log-msg { color: var(--col-photon); }
+
+    /* ── Paused banner ── */
     #paused-banner {
       display: none;
       text-align: center;
@@ -240,11 +213,18 @@
 <body>
 <div id="app">
 
-  <!-- Header -->
   <div id="header">
     <div class="logo">Pun<span>Scope</span></div>
-    <div class="status" id="status-indicator">waiting for clients…</div>
+    <div class="status" id="status-indicator">waiting for clients...</div>
     <div class="spacer"></div>
+
+    <!-- Snap window -->
+    <div class="snap-control">
+      snap
+      <input type="number" id="snap-window-input" value="1000" min="0" step="100"
+        onchange="setSnapWindow(parseInt(this.value) || 0)" />
+      ms
+    </div>
 
     <!-- Type filters -->
     <div class="filter-group">
@@ -254,14 +234,17 @@
       <div class="pill active-photon"  data-type="photon"  onclick="toggleFilter(this)">photon</div>
     </div>
 
-    <!-- Action buttons -->
+    <!-- Actions -->
     <div class="controls">
-      <button class="btn" id="btn-pause"  onclick="togglePause()">⏸ Pause</button>
-      <button class="btn danger"          onclick="clearAll()">✕ Clear</button>
+      <button class="btn danger" onclick="newSession()">New Session</button>
+      <button class="btn" onclick="saveSession()">Save</button>
+      <button class="btn" onclick="loadSession()">Load Session</button>
+      <button class="btn" onclick="loadLogFiles()">Load Logs</button>
+      <button class="btn" id="btn-pause" onclick="togglePause()">Pause</button>
+      <button class="btn danger" onclick="clearAll()">Clear</button>
     </div>
   </div>
 
-  <!-- Columns / empty state -->
   <div id="columns-wrapper">
     <div id="empty">
       <div class="icon">◈</div>
@@ -270,182 +253,9 @@
     </div>
   </div>
 
-  <!-- Paused banner -->
-  <div id="paused-banner" class="visible" id="paused-banner">⏸ PAUSED — logs are buffered</div>
+  <div id="paused-banner">PAUSED — logs are buffered</div>
 
 </div>
-
-<script>
-  // ── State ──────────────────────────────────────────────────────────────────
-  const clients   = {};          // clientId → { color, entries[], colEl, logsEl, countEl }
-  const CLIENT_COLORS = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
-  let colorIndex  = 0;
-
-  let paused      = false;
-  let buffer      = [];          // entries buffered while paused
-  const activeFilters = new Set(['log','warning','error','photon']);
-
-  const colsWrapper = document.getElementById('columns-wrapper');
-  const emptyState  = document.getElementById('empty');
-  const pausedBanner = document.getElementById('paused-banner');
-  pausedBanner.classList.remove('visible'); // hidden on load
-
-  // ── Receive log entries from main process ──────────────────────────────────
-  window.punscope.onLogEntry((entry) => {
-    if (paused) { buffer.push(entry); return; }
-    processEntry(entry);
-  });
-
-  function processEntry(entry) {
-    ensureClient(entry.clientId);
-    appendLog(entry.clientId, entry);
-  }
-
-  // ── Client column management ───────────────────────────────────────────────
-  function ensureClient(id) {
-    if (clients[id]) return;
-
-    const color = CLIENT_COLORS[colorIndex++ % CLIENT_COLORS.length];
-
-    // Hide empty state
-    emptyState.style.display = 'none';
-
-    // Build column
-    const col    = document.createElement('div');
-    col.className = 'client-col';
-    col.id        = `col-${id}`;
-
-    const header = document.createElement('div');
-    header.className = 'col-header';
-
-    const dot = document.createElement('div');
-    dot.className = 'col-dot';
-    dot.style.background = color;
-
-    const name = document.createElement('div');
-    name.className = 'col-name';
-    name.textContent = id;
-    name.style.color  = color;
-
-    const count = document.createElement('div');
-    count.className = 'col-count';
-    count.textContent = '0';
-
-    header.append(dot, name, count);
-
-    const logs = document.createElement('div');
-    logs.className = 'col-logs';
-
-    col.append(header, logs);
-    colsWrapper.append(col);
-
-    clients[id] = { color, entries: [], colEl: col, logsEl: logs, countEl: count };
-
-    updateStatus();
-  }
-
-  // ── Append a log row ───────────────────────────────────────────────────────
-  function appendLog(clientId, entry) {
-    const client = clients[clientId];
-    client.entries.push(entry);
-
-    // Update count badge
-    client.countEl.textContent = client.entries.length;
-
-    // Respect active filters
-    if (!activeFilters.has(entry.eventType)) return;
-
-    const row = buildRow(entry);
-    client.logsEl.appendChild(row);
-
-    // Auto-scroll to bottom
-    client.logsEl.scrollTop = client.logsEl.scrollHeight;
-  }
-
-  function buildRow(entry) {
-    const ms      = entry.elapsed;
-    const timeStr = formatElapsed(ms);
-
-    const row = document.createElement('div');
-    row.className = `log-entry type-${entry.eventType}`;
-    row.dataset.type = entry.eventType;
-
-    const time = document.createElement('div');
-    time.className   = 'log-time';
-    time.textContent = timeStr;
-
-    const msg = document.createElement('div');
-    msg.className   = 'log-msg';
-    msg.textContent = entry.message;
-
-    row.append(time, msg);
-    return row;
-  }
-
-  function formatElapsed(ms) {
-    const s = Math.floor(ms / 1000);
-    const m = Math.floor(s / 60);
-    const rem = ms % 1000;
-    return `${String(m).padStart(2,'0')}:${String(s%60).padStart(2,'0')}.${String(Math.floor(rem/10)).padStart(2,'0')}`;
-  }
-
-  // ── Pause / resume ─────────────────────────────────────────────────────────
-  function togglePause() {
-    paused = !paused;
-    const btn = document.getElementById('btn-pause');
-    btn.textContent = paused ? '▶ Resume' : '⏸ Pause';
-    btn.classList.toggle('active', paused);
-    pausedBanner.classList.toggle('visible', paused);
-
-    if (!paused) {
-      // Flush buffer
-      buffer.forEach(processEntry);
-      buffer = [];
-    }
-  }
-
-  // ── Clear all ──────────────────────────────────────────────────────────────
-  function clearAll() {
-    Object.keys(clients).forEach(id => {
-      clients[id].logsEl.innerHTML = '';
-      clients[id].entries = [];
-      clients[id].countEl.textContent = '0';
-    });
-    buffer = [];
-  }
-
-  // ── Filter pills ───────────────────────────────────────────────────────────
-  function toggleFilter(pill) {
-    const type = pill.dataset.type;
-    if (activeFilters.has(type)) {
-      activeFilters.delete(type);
-      pill.className = 'pill'; // remove active class
-    } else {
-      activeFilters.add(type);
-      pill.className = `pill active-${type}`;
-    }
-    rebuildAllColumns();
-  }
-
-  function rebuildAllColumns() {
-    Object.entries(clients).forEach(([id, client]) => {
-      client.logsEl.innerHTML = '';
-      client.entries.forEach(entry => {
-        if (activeFilters.has(entry.eventType)) {
-          client.logsEl.appendChild(buildRow(entry));
-        }
-      });
-      client.logsEl.scrollTop = client.logsEl.scrollHeight;
-    });
-  }
-
-  // ── Status indicator ───────────────────────────────────────────────────────
-  function updateStatus() {
-    const n   = Object.keys(clients).length;
-    const el  = document.getElementById('status-indicator');
-    el.textContent = `${n} client${n !== 1 ? 's' : ''} connected`;
-    el.className   = 'status live';
-  }
-</script>
+<script src="renderer.js"></script>
 </body>
 </html>

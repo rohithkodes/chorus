@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const dgram = require("dgram");
 const path = require("path");
+const fs = require("fs");
 
 const UDP_PORT = 9901;
 
@@ -21,19 +22,14 @@ function createWindow() {
 
   win.loadFile("index.html");
 
-  // ── UDP Server ─────────────────────────────────────────────────────────────
+  // ── UDP Server ───────────────────────────────────────────────────────────────
   const server = dgram.createSocket("udp4");
 
   server.on("message", (msg) => {
     try {
       const entry = JSON.parse(msg.toString("utf8"));
-      // Forward to renderer via IPC
-      if (!win.isDestroyed()) {
-        win.webContents.send("log-entry", entry);
-      }
-    } catch {
-      // Malformed packet — ignore
-    }
+      if (!win.isDestroyed()) win.webContents.send("log-entry", entry);
+    } catch { /* malformed packet — ignore */ }
   });
 
   server.on("error", (err) => {
@@ -45,8 +41,47 @@ function createWindow() {
     console.log(`[PunScope] Listening on UDP port ${UDP_PORT}`);
   });
 
-  // Clean up socket when window closes
   win.on("closed", () => server.close());
+
+  // ── Save session ─────────────────────────────────────────────────────────────
+  ipcMain.handle("save-session", async (_event, sessionData) => {
+    const { filePath, canceled } = await dialog.showSaveDialog(win, {
+      title: "Save PunScope Session",
+      defaultPath: `punscope-session-${Date.now()}.json`,
+      filters: [{ name: "PunScope Session", extensions: ["json"] }],
+    });
+    if (canceled || !filePath) return { ok: false };
+    fs.writeFileSync(filePath, JSON.stringify(sessionData, null, 2), "utf8");
+    return { ok: true, filePath };
+  });
+
+  // ── Load session (.json) ─────────────────────────────────────────────────────
+  ipcMain.handle("load-session", async () => {
+    const { filePaths, canceled } = await dialog.showOpenDialog(win, {
+      title: "Load PunScope Session",
+      filters: [{ name: "PunScope Session", extensions: ["json"] }],
+      properties: ["openFile"],
+    });
+    if (canceled || !filePaths.length) return null;
+    const raw = fs.readFileSync(filePaths[0], "utf8");
+    return JSON.parse(raw);
+  });
+
+  // ── Load browser .log files ──────────────────────────────────────────────────
+  ipcMain.handle("load-log-files", async () => {
+    const { filePaths, canceled } = await dialog.showOpenDialog(win, {
+      title: "Load Browser Log Files",
+      filters: [{ name: "Log Files", extensions: ["log", "txt"] }],
+      properties: ["openFile", "multiSelections"],
+    });
+    if (canceled || !filePaths.length) return null;
+
+    return filePaths.map((fp) => ({
+      // Filename without extension becomes the clientId
+      clientId: path.basename(fp, path.extname(fp)),
+      content: fs.readFileSync(fp, "utf8"),
+    }));
+  });
 }
 
 app.whenReady().then(createWindow);
