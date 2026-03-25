@@ -91,11 +91,19 @@ var PS_PREFIX_RE = /^\[PS:[A-Z]+\]\s+(\S+)(.*)/;
 var KV_RE = /([\w]+)=([^\s|]+)/g;
 var IGNORED_KEYS = { t: true };
 
+// Events that fire every tick or are otherwise too frequent to snap usefully.
+// These will each get their own row and never align across columns.
+var SNAP_BLOCKLIST = {
+    'GameLoop_Tick': true,
+};
+
 function extractSnapKey(message) {
     var m = message.match(PS_PREFIX_RE);
     if (!m) return null;
 
     var eventName = m[1];
+    if (SNAP_BLOCKLIST[eventName]) return null;
+
     var rest = m[2] || '';
     var pairs = [];
     var kv;
@@ -309,10 +317,7 @@ function stripTagsForDisplay(message) {
 
 // ── Elapsed formatting ────────────────────────────────────────────────────────
 function formatElapsed(ms) {
-    if (ms % 10 === 0 && ms < 864000000 && ms >= 0) {
-        var line = ms / 10;
-        if (line < 100000) return 'L' + String(line).padStart(4, '0');
-    }
+    if (ms < 0) ms = 0;
     var s = Math.floor(ms / 1000);
     var m = Math.floor(s / 60);
     var rem = Math.floor((ms % 1000) / 10);
@@ -425,16 +430,18 @@ async function loadSession() {
 
     sessionStartTimestamp = all[0].entry.timestamp;
 
-    // Replay entries through processEntry logic (minus IPC)
+    // Register all clients first so grid columns are complete before rendering
+    for (var i = 0; i < ids.length; i++) {
+        if (!clientMeta[ids[i]]) {
+            ensureClientWithColor(ids[i], data.clients[ids[i]].color);
+        }
+    }
+
+    // Place all entries into rows
     for (var i = 0; i < all.length; i++) {
         var item = all[i];
         var entry = item.entry;
         entry.elapsed = entry.timestamp - sessionStartTimestamp;
-
-        // Ensure client exists with its saved colour
-        if (!clientMeta[item.clientId]) {
-            ensureClientWithColor(item.clientId, item.color);
-        }
 
         if (entry.eventType === 'rename' && entry.newClientId) continue;
 
@@ -455,6 +462,7 @@ async function loadLogFiles() {
     newSession();
     files.sort(function (a, b) { return a.clientId.localeCompare(b.clientId); });
 
+    // Parse all files first
     var all = [];
     for (var i = 0; i < files.length; i++) {
         var entries = parseChromeLog(files[i].content, files[i].clientId);
@@ -467,47 +475,138 @@ async function loadLogFiles() {
 
     sessionStartTimestamp = all[0].entry.timestamp;
 
+    // Register ALL clients first so grid column template is complete
+    // before any rows are placed or rendered
+    for (var i = 0; i < files.length; i++) {
+        ensureClient(files[i].clientId);
+    }
+
+    // Now place all entries into rows
     for (var i = 0; i < all.length; i++) {
         var item = all[i];
         var entry = item.entry;
         entry.elapsed = entry.timestamp - sessionStartTimestamp;
-
-        ensureClient(item.clientId);
         clientMeta[item.clientId].entries.push(entry);
         clientMeta[item.clientId].countEl.textContent = clientMeta[item.clientId].entries.length;
         placeEntryInRow(entry);
     }
 
+    // Render once everything is ready
     renderAllRows();
     flashStatus(files.length + ' log file(s) loaded');
 }
 
 // ── Chrome log parser ─────────────────────────────────────────────────────────
-var CHROME_SOURCE_PREFIX_RE = /^\S+\.js:\d+\s+/;
-var CHROME_STACK_FRAME_RE = /^\S+\s*@\s*\S+\.js:\d+$/;
+// Handles Chrome DevTools saved log format:
+//   HH:MM:SS.mmm  filename.js:N  message      ← timestamped line
+//   filename.js:N  message                     ← no timestamp (continuation)
+//   _fnName @ filename.js:N                    ← stack frame, skip
+//   (blank line)                               ← skip
+
+// Matches any timestamped line in Chrome DevTools exports.
+// Three formats exist in the wild:
+//   "HH:MM:SS.mmm  filename.js:N  message"   (ts + source prefix)
+//   "HH:MM:SS.mmm  message"                  (ts + 2 spaces, no source prefix)
+//   "HH:MM:SS.mmm message"                   (ts + 1 space, no source prefix)
+// Strategy: match the timestamp, then optionally strip a source prefix,
+// then take whatever remains as the message.
+var CHROME_TS_RE = /^(\d{2}:\d{2}:\d{2}\.\d+)\s+(.*)/;
+var CHROME_SOURCE_STRIP = /^\S+\.js:\d+\s+/;
+var CHROME_STACK_FRAME_RE = /^\S+\s*@\s*\S+\.js:\d+/;
+
+// Lines matching these patterns are skipped during Chrome log import —
+// they are Unity/WebGL boot noise with no debugging value.
+var CHROME_NOISE_RES = [
+    /^\[UnityMemory\]/,
+    /^"memorysetup-/,
+    /^\[UnityCache\]/,
+    /^\[Subsystems\]/,
+    /^\[Physics::/,
+    /^Trying to get length of sound/,
+    /^The AudioContext was not allowed/,
+    /^WebGL: INVALID_ENUM/,
+    /^OPENGL LOG:/,
+    /^Renderer:/,
+    /^Vendor:/,
+    /^Version:/,
+    /^GLES:/,
+    /^EXT_|^GL_|^OES_|^NV_|^WEBGL_|^KHR_/,
+    /^Manual synchronization of Unity/,
+    /^_JS_FileSystem_Sync/,
+    /^Loading player data/,
+    /^Initialize engine version/,
+    /^Creating WebGL/,
+    /^Input Manager initialize/,
+    /^UnloadTime:/,
+    /^Unloading \d+ Unused Serialized/,
+    /^Unloading \d+ unused Assets/,
+    /^Total: [\d.]+ ms \(FindLiveObjects/,
+    /^texture_compression_/,  // wrapped GL extension string continuation
+    /^sion_/,                  // another GL extension continuation fragment
+];
+
+function isChromeNoise(message) {
+    for (var i = 0; i < CHROME_NOISE_RES.length; i++) {
+        if (CHROME_NOISE_RES[i].test(message)) return true;
+    }
+    return false;
+}
+
+function parseTimestampToMs(ts) {
+    // "HH:MM:SS.mmm" → ms since midnight
+    var parts = ts.split(/[:.]/)
+    return parseInt(parts[0]) * 3600000
+        + parseInt(parts[1]) * 60000
+        + parseInt(parts[2]) * 1000
+        + parseInt((parts[3] || '0').padEnd(3, '0').slice(0, 3));
+}
 
 function parseChromeLog(content, clientId) {
     var lines = content.split(/\r?\n/);
     var entries = [];
-    var index = 0;
+    var lastMs = null;   // ms-since-midnight of last timestamped line
+    var fallbackIndex = 0;
 
     for (var i = 0; i < lines.length; i++) {
-        var line = lines[i].trim();
-        if (!line) continue;
-        if (CHROME_STACK_FRAME_RE.test(line)) continue;
-        var message = line.replace(CHROME_SOURCE_PREFIX_RE, '').trim();
+        var line = lines[i];  // do NOT trim — leading spaces matter for continuation
+        var trimmed = line.trim();
+
+        if (!trimmed) continue;
+        if (CHROME_STACK_FRAME_RE.test(trimmed)) continue;
+
+        var message = null;
+        var ms = null;
+
+        var m = CHROME_TS_RE.exec(trimmed);
+        if (m) {
+            // Timestamped line — strip optional source prefix from the rest
+            ms = parseTimestampToMs(m[1]);
+            message = m[2].replace(CHROME_SOURCE_STRIP, '').trim();
+            lastMs = ms;
+        } else {
+            // No timestamp — skip (these are continuation lines we can't place)
+            continue;
+        }
+
         if (!message) continue;
+        if (isChromeNoise(message)) continue;
+
+        // Convert ms-since-midnight to a comparable epoch value.
+        // We use a fixed date base so cross-file timestamps align correctly.
+        var timestamp = ms;  // loadLogFiles will normalise to session start
 
         entries.push({
             clientId: clientId,
-          timestamp: Date.now() + index,
-          elapsed: index * 10,
+            timestamp: timestamp,
+            elapsed: 0,  // filled by loadLogFiles after global sort
           logType: classifyLogType(message),
           eventType: classifyEventType(message),
           message: message,
       });
-        index++;
+
+        fallbackIndex++;
     }
+
     return entries;
 }
 
