@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Electron build output
+dist/
+out/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Env
+.env
