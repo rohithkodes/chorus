@@ -208,6 +208,9 @@ function renderAllRows() {
     for (var i = 0; i < rows.length; i++) {
         renderRow(i);
     }
+    // Re-apply search highlights after a full re-render
+    var input = document.getElementById('search-input');
+    if (input && input.value.trim()) runSearch(input.value.trim());
 }
 
 function renderRow(rowIdx) {
@@ -599,10 +602,10 @@ function parseChromeLog(content, clientId) {
             clientId: clientId,
             timestamp: timestamp,
             elapsed: 0,  // filled by loadLogFiles after global sort
-          logType: classifyLogType(message),
-          eventType: classifyEventType(message),
-          message: message,
-      });
+            logType: classifyLogType(message),
+            eventType: classifyEventType(message),
+            message: message,
+        });
 
         fallbackIndex++;
     }
@@ -671,4 +674,121 @@ function flashStatus(msg) {
     var prev = el.textContent;
     el.textContent = '✓ ' + msg;
     setTimeout(function () { el.textContent = prev; }, 2500);
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+var searchMatches = [];   // array of .grid-row elements that match
+var searchCurrent = -1;   // index into searchMatches of active match
+
+document.addEventListener('keydown', function (e) {
+    // Ctrl+F — open search
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        openSearch();
+        return;
+    }
+    // Escape — close search
+    if (e.key === 'Escape') {
+        closeSearch();
+        return;
+    }
+    // Enter / Shift+Enter — navigate matches when search is open
+    var bar = document.getElementById('search-bar');
+    if (bar.classList.contains('visible') && e.key === 'Enter') {
+        e.preventDefault();
+        searchNav(e.shiftKey ? -1 : 1);
+    }
+});
+
+function openSearch() {
+    var bar = document.getElementById('search-bar');
+    var input = document.getElementById('search-input');
+    bar.classList.add('visible');
+    input.focus();
+    input.select();
+}
+
+function closeSearch() {
+    var bar = document.getElementById('search-bar');
+    var input = document.getElementById('search-input');
+    bar.classList.remove('visible');
+    input.value = '';
+    clearSearchHighlights();
+    searchMatches = [];
+    searchCurrent = -1;
+}
+
+document.getElementById('search-input').addEventListener('input', function () {
+    runSearch(this.value.trim());
+});
+
+function runSearch(term) {
+    clearSearchHighlights();
+    searchMatches = [];
+    searchCurrent = -1;
+
+    if (!term) {
+        updateSearchCount();
+        return;
+    }
+
+    var lower = term.toLowerCase();
+    var rowEls = gridEl.querySelectorAll('.grid-row');
+
+    for (var i = 0; i < rowEls.length; i++) {
+        var rowEl = rowEls[i];
+        // Gather text from all non-empty cells in this row
+        var cells = rowEl.querySelectorAll('.grid-cell:not(.empty)');
+        var matched = false;
+        for (var j = 0; j < cells.length; j++) {
+            if (cells[j].textContent.toLowerCase().includes(lower)) {
+                matched = true;
+                break;
+            }
+        }
+        if (matched) {
+            rowEl.classList.add('search-match');
+            searchMatches.push(rowEl);
+        }
+    }
+
+    if (searchMatches.length > 0) {
+        searchCurrent = 0;
+        activateMatch(0);
+    }
+
+    updateSearchCount();
+}
+
+function searchNav(dir) {
+    if (!searchMatches.length) return;
+    searchMatches[searchCurrent].classList.remove('search-match-active');
+    searchCurrent = (searchCurrent + dir + searchMatches.length) % searchMatches.length;
+    activateMatch(searchCurrent);
+    updateSearchCount();
+}
+
+function activateMatch(idx) {
+    var el = searchMatches[idx];
+    el.classList.add('search-match-active');
+    // Scroll the first child cell into view (grid-row uses display:contents
+    // so the row itself has no box — scroll via its first real child)
+    var firstCell = el.querySelector('.grid-time') || el.querySelector('.grid-cell');
+    if (firstCell) firstCell.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function clearSearchHighlights() {
+    var marked = gridEl.querySelectorAll('.search-match, .search-match-active');
+    for (var i = 0; i < marked.length; i++) {
+        marked[i].classList.remove('search-match', 'search-match-active');
+    }
+}
+
+function updateSearchCount() {
+    var el = document.getElementById('search-count');
+    if (!searchMatches.length) {
+        el.textContent = document.getElementById('search-input').value ? '0 results' : '';
+        return;
+    }
+    el.textContent = (searchCurrent + 1) + ' / ' + searchMatches.length;
 }

@@ -162,6 +162,43 @@
     #empty .label { font-size: 13px; }
     #empty .sub { font-size: 11px; opacity: 0.6; }
 
+    /* ── Search bar ── */
+    #search-bar {
+      display: none;
+      position: fixed;
+      top: 56px;
+      right: 20px;
+      z-index: 100;
+      background: var(--surface);
+      border: 1px solid var(--c1);
+      border-radius: 6px;
+      padding: 6px 10px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 24px #00000060;
+    }
+    #search-bar.visible { display: flex; }
+    #search-input {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      width: 220px;
+      outline: none;
+    }
+    #search-input::placeholder { color: var(--text-dim); }
+    #search-count { font-size: 10px; color: var(--text-dim); white-space: nowrap; min-width: 50px; }
+    .search-nav { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 13px; padding: 0 2px; line-height: 1; }
+    .search-nav:hover { color: var(--text); }
+    .search-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; padding: 0 0 0 4px; line-height: 1; }
+    .search-close:hover { color: var(--col-error); }
+
+    /* Match highlight */
+    .grid-row.search-match > .grid-cell:not(.empty) { background: #1a2a1a; }
+    .grid-row.search-match-active > .grid-cell:not(.empty) { background: #1e3a1e; outline: 1px solid #34d39960; }
+
     /* ── Paused banner ── */
     #paused-banner { display: none; text-align: center; padding: 6px; background: #1a1400; border-top: 1px solid #facc1540; color: var(--col-warning); font-size: 11px; letter-spacing: 1px; flex-shrink: 0; }
     #paused-banner.visible { display: block; }
@@ -208,6 +245,16 @@
       </div>
       <div id="grid-body"></div>
     </div>
+  </div>
+
+  <!-- Search bar -->
+  <div id="search-bar">
+    <span style="color:var(--text-dim);font-size:11px;">⌕</span>
+    <input id="search-input" type="text" placeholder="search messages or category..." />
+    <span id="search-count"></span>
+    <button class="search-nav" onclick="searchNav(-1)" title="Previous (Shift+Enter)">▲</button>
+    <button class="search-nav" onclick="searchNav(1)" title="Next (Enter)">▼</button>
+    <button class="search-close" onclick="closeSearch()">✕</button>
   </div>
 
   <div id="paused-banner">PAUSED — logs are buffered</div>

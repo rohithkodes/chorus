@@ -20,6 +20,7 @@ function createWindow() {
     title: "PunScope",
   });
 
+  win.setMenuBarVisibility(false);
   win.loadFile("index.html");
 
   // ── UDP Server ───────────────────────────────────────────────────────────────
