@@ -15,6 +15,7 @@ var snapWindowMs = 1000;
 // Tracks the most recent snap group for each named event so new arrivals
 // can be placed at the same visual row index.
 var snapGroups = {};
+var sessionStartTimestamp = null;  // global zero point for elapsed across all clients
 
 // snapRowCounter: global incrementing row index used to assign snap rows
 var snapRowCounter = 0;
@@ -35,23 +36,48 @@ function processEntry(entry) {
         renameClient(entry.clientId, entry.newClientId);
         return;
     }
+
+    // Anchor all elapsed times to the very first entry received this session
+    if (sessionStartTimestamp === null) sessionStartTimestamp = entry.timestamp;
+    entry.elapsed = entry.timestamp - sessionStartTimestamp;
+
     ensureClient(entry.clientId);
-
-    // Determine snap row for this entry (or null if not snap-eligible)
     entry._snapRow = resolveSnapRow(entry);
-
     appendLog(entry.clientId, entry);
 }
 
 // ── Snap logic ───────────────────────────────────────────────────────────────
 
 // A log is snap-eligible if its message starts with [PS:SomeCategory]
-// e.g. "[PS:NETWORK] OnDisconnected | ..."
-var PS_PREFIX_RE = /^\[PS:[A-Z]+\]\s+(\S+)/;
+// e.g. "[PS:NETWORK] OnDisconnected | cause=... | state=... | t=1.23"
+//
+// The snap key is: eventName + all key=value pairs EXCEPT 't' (timestamp).
+// This means NetworkState_Exit|state=IdleState and
+// NetworkState_Exit|state=ConnectingState get different keys and never
+// incorrectly snap together, even though they share the same event name.
+var PS_PREFIX_RE = /^\[PS:[A-Z]+\]\s+(\S+)(.*)/;
+var KV_RE = /([\w]+)=([^\s|]+)/g;
+var IGNORED_KEYS = { t: true };  // timestamp varies per client, exclude from key
 
 function extractSnapKey(message) {
     var m = message.match(PS_PREFIX_RE);
-    return m ? m[1] : null;  // e.g. "OnDisconnected"
+    if (!m) return null;
+
+    var eventName = m[1];           // e.g. "NetworkState_Exit"
+    var rest = m[2] || '';     // e.g. " | state=IdleState | t=37.84"
+
+    // Collect key=value pairs, sorted for determinism, excluding ignored keys
+    var pairs = [];
+    var kv;
+    KV_RE.lastIndex = 0;
+    while ((kv = KV_RE.exec(rest)) !== null) {
+        if (!IGNORED_KEYS[kv[1]]) {
+            pairs.push(kv[1] + '=' + kv[2]);
+        }
+    }
+    pairs.sort();
+
+    return pairs.length > 0 ? eventName + '|' + pairs.join('|') : eventName;
 }
 
 function resolveSnapRow(entry) {
@@ -174,6 +200,26 @@ function alignOtherColumns(sourceClientId, snapRow, rowHeight) {
     }
 }
 
+// ── Tag colours and display ──────────────────────────────────────────────────
+var TAG_COLORS = {
+    'NETWORK': '#4fc3f7',  // sky
+    'STATE': '#a78bfa',  // violet
+    'INIT': '#34d399',  // emerald
+    'RECONNECT': '#fb923c',  // amber
+};
+var TAG_RE = /^\[PS:([A-Z]+)\]\s*/;
+var TIMESTAMP_RE = /\s*\|\s*t=[\d.]+$/;
+
+function getTagColor(message) {
+    var m = message.match(TAG_RE);
+    return m ? (TAG_COLORS[m[1]] || null) : null;
+}
+
+function stripTagsForDisplay(message) {
+    // Remove [PS:X] prefix and trailing | t=XX.XX
+    return message.replace(TAG_RE, '').replace(TIMESTAMP_RE, '').trim();
+}
+
 function buildRow(entry) {
     var row = document.createElement('div');
     row.className = 'log-entry type-' + entry.eventType;
@@ -185,13 +231,28 @@ function buildRow(entry) {
         row.classList.add('is-snapped');
     }
 
+    var tagColor = getTagColor(entry.message);
+
+    // Tag badge — shows [NETWORK], [STATE] etc with its colour
+    if (tagColor) {
+        var tagM = entry.message.match(TAG_RE);
+        var badge = document.createElement('div');
+        badge.className = 'log-tag';
+        badge.textContent = tagM[1];
+        badge.style.color = tagColor;
+        badge.style.borderColor = tagColor;
+        row.appendChild(badge);
+    }
+
     var time = document.createElement('div');
     time.className = 'log-time';
     time.textContent = formatElapsed(entry.elapsed);
 
     var msg = document.createElement('div');
     msg.className = 'log-msg';
-    msg.textContent = entry.message;
+    // Display without [PS:X] prefix and trailing timestamp
+    msg.textContent = stripTagsForDisplay(entry.message);
+    if (tagColor) msg.style.color = tagColor;
 
     row.appendChild(time);
     row.appendChild(msg);
@@ -227,7 +288,6 @@ function togglePause() {
 }
 
 function newSession() {
-    // Remove all column DOM elements and reset everything
     var ids = Object.keys(clients);
     for (var i = 0; i < ids.length; i++) {
         clients[ids[i]].colEl.remove();
@@ -237,6 +297,7 @@ function newSession() {
     buffer = [];
     snapGroups = {};
     snapRowCounter = 0;
+    sessionStartTimestamp = null;
     emptyState.style.display = '';
     var el = document.getElementById('status-indicator');
     el.textContent = 'waiting for clients...';
@@ -341,29 +402,61 @@ async function loadSession() {
     var data = await window.punscope.loadSession();
     if (!data) return;
 
-    clearAll();
+    newSession();
 
     var ids = Object.keys(data.clients);
+
+    // 1. Create all columns first with their saved colours
     for (var i = 0; i < ids.length; i++) {
-        var id = ids[i];
-        var saved = data.clients[id];
+        ensureClientWithColor(ids[i], data.clients[ids[i]].color);
+    }
 
-        // Force the saved colour so columns look the same as when saved
-        ensureClientWithColor(id, saved.color);
-
-        for (var j = 0; j < saved.entries.length; j++) {
-            var entry = saved.entries[j];
-            entry._snapRow = resolveSnapRow(entry);
-            if (!activeFilters[entry.eventType]) continue;
-            var row = buildRow(entry);
-            clients[id].logsEl.appendChild(row);
-            clients[id].entries.push(entry);
-            clients[id].countEl.textContent = clients[id].entries.length;
-            if (entry._snapRow !== null) {
-                alignOtherColumns(id, entry._snapRow, row.offsetHeight || 22);
-            }
+    // 2. Collect all entries across all clients and sort by timestamp
+    //    so spacers get inserted in the correct order globally
+    var all = [];
+    for (var i = 0; i < ids.length; i++) {
+        var entries = data.clients[ids[i]].entries;
+        for (var j = 0; j < entries.length; j++) {
+            all.push({ clientId: ids[i], entry: entries[j] });
         }
-        clients[id].logsEl.scrollTop = 0;
+    }
+    all.sort(function (a, b) { return a.entry.timestamp - b.entry.timestamp; });
+
+    // 3. Find global session start and highest snap row
+    var maxSavedSnapRow = -1;
+    var minTimestamp = Infinity;
+    for (var i = 0; i < all.length; i++) {
+        var e = all[i].entry;
+        if (e.timestamp < minTimestamp) minTimestamp = e.timestamp;
+        var sr = e._snapRow;
+        if (sr !== null && sr !== undefined && sr > maxSavedSnapRow) maxSavedSnapRow = sr;
+    }
+    snapRowCounter = maxSavedSnapRow + 1;
+    sessionStartTimestamp = minTimestamp;
+
+    // Normalize all elapsed values to global session start
+    for (var i = 0; i < all.length; i++) {
+        all[i].entry.elapsed = all[i].entry.timestamp - minTimestamp;
+    }
+
+    // 4. Render in timestamp order, trusting saved _snapRow values directly
+    for (var i = 0; i < all.length; i++) {
+        var clientId = all[i].clientId;
+        var entry = all[i].entry;
+        var client = clients[clientId];
+
+        client.entries.push(entry);
+        client.countEl.textContent = client.entries.length;
+
+        if (!activeFilters[entry.eventType]) continue;
+
+        var row = buildRow(entry);
+        client.logsEl.appendChild(row);
+
+        // Use saved _snapRow directly — do NOT call resolveSnapRow
+        if (entry._snapRow !== null && entry._snapRow !== undefined) {
+            alignOtherColumns(clientId, entry._snapRow, row.offsetHeight || 22);
+        }
     }
 
     flashStatus("Session loaded");

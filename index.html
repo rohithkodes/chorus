@@ -189,6 +189,20 @@
     /* Invisible spacer inserted in columns missing a snapped event */
     .snap-spacer { width: 100%; }
 
+    /* Tag badge e.g. NETWORK, STATE, INIT */
+    .log-tag {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      border: 1px solid;
+      border-radius: 3px;
+      padding: 1px 4px;
+      white-space: nowrap;
+      align-self: center;
+      opacity: 0.8;
+      flex-shrink: 0;
+    }
+
     .log-time { color: var(--text-dim); font-size: 10px; white-space: nowrap; padding-top: 1px; min-width: 52px; }
     .log-msg { font-size: 11.5px; color: var(--col-log); word-break: break-word; flex: 1; }
     .log-entry.type-warning .log-msg { color: var(--col-warning); }
@@ -222,7 +236,7 @@
     <div class="snap-control">
       snap
       <input type="number" id="snap-window-input" value="1000" min="0" step="100"
-        onchange="setSnapWindow(parseInt(this.value) || 0)" />
+             onchange="setSnapWindow(parseInt(this.value) || 0)" />
       ms
     </div>
 
