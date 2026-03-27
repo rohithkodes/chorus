@@ -7,6 +7,7 @@ var colorIndex = 0;
 var paused = false;
 var buffer = [];
 var activeFilters = { log: true, warning: true, error: true, network: true };
+var autoScroll = true;
 
 // ── Grid state ────────────────────────────────────────────────────────────────
 // rows[] is the single source of truth for what's rendered.
@@ -24,8 +25,47 @@ var sessionStartTimestamp = null;
 var colsWrapper = document.getElementById('columns-wrapper');
 var headersEl = document.getElementById('grid-headers');
 var gridEl = document.getElementById('grid-body');
+var gridScroll = document.getElementById('grid-scroll');
 var emptyState = document.getElementById('empty');
 var pausedBanner = document.getElementById('paused-banner');
+var jumpBtn = document.getElementById('jump-to-bottom');
+
+// ── Auto-scroll detection ─────────────────────────────────────────────────────
+var scrollTimeout = null;
+gridScroll.addEventListener('scroll', function () {
+    // Debounce scroll detection
+    if (scrollTimeout) clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(function () {
+        var atBottom = gridScroll.scrollHeight - gridScroll.scrollTop - gridScroll.clientHeight < 50;
+        if (atBottom) {
+            autoScroll = true;
+            updateJumpButton();
+        } else if (autoScroll) {
+            autoScroll = false;
+            updateJumpButton();
+        }
+    }, 100);
+});
+
+function updateJumpButton() {
+    if (autoScroll || rows.length === 0) {
+        jumpBtn.classList.remove('visible');
+    } else {
+        jumpBtn.classList.add('visible');
+    }
+}
+
+function jumpToBottom() {
+    autoScroll = true;
+    gridScroll.scrollTop = gridScroll.scrollHeight;
+    updateJumpButton();
+}
+
+function scrollToBottomIfEnabled() {
+    if (autoScroll) {
+        gridScroll.scrollTop = gridScroll.scrollHeight;
+    }
+}
 
 // ── IPC ───────────────────────────────────────────────────────────────────────
 window.chorus.onLogEntry(function (entry) {
@@ -52,6 +92,9 @@ function processEntry(entry) {
 
     // Render just this row (fast path for live updates)
     renderRow(rowIdx);
+
+    // Auto-scroll to bottom if enabled
+    scrollToBottomIfEnabled();
 }
 
 // ── Row placement ─────────────────────────────────────────────────────────────
@@ -350,8 +393,10 @@ function newSession() {
     snapIndex = {};
     buffer = [];
     sessionStartTimestamp = null;
+    autoScroll = true;
     gridEl.innerHTML = '';
     headersEl.innerHTML = '';
+    updateJumpButton();
     // Re-add the time header placeholder
     var timeHeader = document.createElement('div');
     timeHeader.className = 'grid-header-cell time-header';
@@ -376,7 +421,9 @@ function clearAll() {
     snapIndex = {};
     buffer = [];
     sessionStartTimestamp = null;
+    autoScroll = true;
     gridEl.innerHTML = '';
+    updateJumpButton();
 }
 
 function toggleFilter(pill) {
@@ -454,6 +501,7 @@ async function loadSession() {
     }
 
     renderAllRows();
+    scrollToBottomIfEnabled();
     flashStatus('Session loaded');
 }
 
@@ -496,6 +544,7 @@ async function loadLogFiles() {
 
     // Render once everything is ready
     renderAllRows();
+    scrollToBottomIfEnabled();
     flashStatus(files.length + ' log file(s) loaded');
 }
 
