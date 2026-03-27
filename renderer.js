@@ -28,7 +28,7 @@ var emptyState = document.getElementById('empty');
 var pausedBanner = document.getElementById('paused-banner');
 
 // ── IPC ───────────────────────────────────────────────────────────────────────
-window.punscope.onLogEntry(function (entry) {
+window.chorus.onLogEntry(function (entry) {
     if (paused) { buffer.push(entry); return; }
     processEntry(entry);
 });
@@ -407,13 +407,13 @@ async function saveSession() {
             entries: clientMeta[id].entries
         };
     }
-    var result = await window.punscope.saveSession(sessionData);
+    var result = await window.chorus.saveSession(sessionData);
     if (result.ok) flashStatus('Session saved');
 }
 
 // ── Load session ──────────────────────────────────────────────────────────────
 async function loadSession() {
-    var data = await window.punscope.loadSession();
+    var data = await window.chorus.loadSession();
     if (!data) return;
 
     newSession();
@@ -459,7 +459,7 @@ async function loadSession() {
 
 // ── Load browser .log files ───────────────────────────────────────────────────
 async function loadLogFiles() {
-    var files = await window.punscope.loadLogFiles();
+    var files = await window.chorus.loadLogFiles();
     if (!files) return;
 
     newSession();

@@ -1,5 +1,5 @@
 {
-  "name": "punscope",
+  "name": "chorus",
   "version": "0.1.0",
   "description": "Multiplayer log dashboard for Unity + Photon",
   "main": "main.js",
@@ -8,8 +8,8 @@
     "build": "electron-builder --win --x64"
   },
   "build": {
-    "appId": "com.rohithkodes.punscope",
-    "productName": "PunScope",
+    "appId": "com.rohithkodes.chorus",
+    "productName": "Chorus",
     "directories": {
       "output": "dist"
     },

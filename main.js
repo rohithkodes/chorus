@@ -17,7 +17,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
     },
-    title: "PunScope",
+    title: "Chorus",
   });
 
   win.setMenuBarVisibility(false);
@@ -34,12 +34,12 @@ function createWindow() {
   });
 
   server.on("error", (err) => {
-    console.error("[PunScope] UDP error:", err.message);
+    console.error("[Chorus] UDP error:", err.message);
     server.close();
   });
 
   server.bind(UDP_PORT, () => {
-    console.log(`[PunScope] Listening on UDP port ${UDP_PORT}`);
+    console.log(`[Chorus] Listening on UDP port ${UDP_PORT}`);
   });
 
   win.on("closed", () => server.close());
@@ -47,9 +47,9 @@ function createWindow() {
   // ── Save session ─────────────────────────────────────────────────────────────
   ipcMain.handle("save-session", async (_event, sessionData) => {
     const { filePath, canceled } = await dialog.showSaveDialog(win, {
-      title: "Save PunScope Session",
-      defaultPath: `punscope-session-${Date.now()}.json`,
-      filters: [{ name: "PunScope Session", extensions: ["json"] }],
+      title: "Save Chorus Session",
+      defaultPath: `chorus-session-${Date.now()}.json`,
+      filters: [{ name: "Chorus Session", extensions: ["json"] }],
     });
     if (canceled || !filePath) return { ok: false };
     fs.writeFileSync(filePath, JSON.stringify(sessionData, null, 2), "utf8");
@@ -59,8 +59,8 @@ function createWindow() {
   // ── Load session (.json) ─────────────────────────────────────────────────────
   ipcMain.handle("load-session", async () => {
     const { filePaths, canceled } = await dialog.showOpenDialog(win, {
-      title: "Load PunScope Session",
-      filters: [{ name: "PunScope Session", extensions: ["json"] }],
+      title: "Load Chorus Session",
+      filters: [{ name: "Chorus Session", extensions: ["json"] }],
       properties: ["openFile"],
     });
     if (canceled || !filePaths.length) return null;
