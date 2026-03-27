@@ -6,7 +6,7 @@ var colorIndex = 0;
 
 var paused = false;
 var buffer = [];
-var activeFilters = { log: true, warning: true, error: true, photon: true };
+var activeFilters = { log: true, warning: true, error: true, network: true };
 
 // ── Grid state ────────────────────────────────────────────────────────────────
 // rows[] is the single source of truth for what's rendered.
@@ -625,7 +625,7 @@ function classifyEventType(message) {
     if (message.match(/^\[PS:[A-Z]+\]/)) {
         if (lower.includes('error') || lower.includes('exception')) return 'error';
         if (lower.includes('warning') || lower.includes('warn')) return 'warning';
-        return 'photon';
+        return 'network';
     }
     if (lower.includes('error') || lower.includes('exception')) return 'error';
     if (lower.includes('warning') || lower.includes('warn')) return 'warning';

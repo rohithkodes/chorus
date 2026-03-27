@@ -25,7 +25,7 @@
       --col-log:     #c8cdd8;
       --col-warning: #facc15;
       --col-error:   #f87171;
-      --col-photon:  #818cf8;
+      --col-network: #818cf8;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -58,7 +58,7 @@
     .btn.danger:hover { background: #2d1a1a; border-color: var(--col-error); color: var(--col-error); }
 
     .snap-control { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); -webkit-app-region: no-drag; }
-    .snap-control input { width: 52px; background: var(--border); border: 1px solid var(--muted); color: var(--text); font-family: var(--mono); font-size: 11px; padding: 3px 6px; border-radius: 4px; text-align: right; }
+    .snap-control input { width: 64px; background: var(--border); border: 1px solid var(--muted); color: var(--text); font-family: var(--mono); font-size: 11px; padding: 3px 6px; border-radius: 4px; text-align: right; }
     .snap-control input:focus { outline: none; border-color: var(--c1); }
 
     .filter-group { display: flex; gap: 4px; -webkit-app-region: no-drag; }
@@ -67,7 +67,7 @@
     .pill.active-log     { border-color: var(--col-log);     color: var(--col-log);     background: #1a1e28; }
     .pill.active-warning { border-color: var(--col-warning); color: var(--col-warning); background: #211e10; }
     .pill.active-error   { border-color: var(--col-error);   color: var(--col-error);   background: #201414; }
-    .pill.active-photon  { border-color: var(--col-photon);  color: var(--col-photon);  background: #161828; }
+    .pill.active-network { border-color: var(--col-network); color: var(--col-network); background: #161828; }
 
     /* ── Grid layout ── */
     #grid-container {
@@ -141,13 +141,13 @@
     .grid-cell.empty { min-height: 22px; }
     .grid-cell.type-error   { border-left-color: var(--col-error); }
     .grid-cell.type-warning { border-left-color: var(--col-warning); }
-    .grid-cell.type-photon  { border-left-color: var(--col-photon); }
+    .grid-cell.type-network { border-left-color: var(--col-network); }
 
     .log-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.6px; border: 1px solid; border-radius: 3px; padding: 1px 4px; white-space: nowrap; align-self: center; opacity: 0.8; flex-shrink: 0; }
     .log-msg { font-size: 11.5px; color: var(--col-log); flex: 1; line-height: 1.5; }
     .grid-cell.type-warning .log-msg { color: var(--col-warning); }
     .grid-cell.type-error   .log-msg { color: var(--col-error); }
-    .grid-cell.type-photon  .log-msg { color: var(--col-photon); }
+    .grid-cell.type-network .log-msg { color: var(--col-network); }
 
     /* Column name / dot / count shared styles */
     .col-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -221,7 +221,7 @@
       <div class="pill active-log"     data-type="log"     onclick="toggleFilter(this)">log</div>
       <div class="pill active-warning" data-type="warning" onclick="toggleFilter(this)">warn</div>
       <div class="pill active-error"   data-type="error"   onclick="toggleFilter(this)">error</div>
-      <div class="pill active-photon"  data-type="photon"  onclick="toggleFilter(this)">photon</div>
+      <div class="pill active-network" data-type="network" onclick="toggleFilter(this)">network</div>
     </div>
     <div class="controls">
       <button class="btn danger" onclick="newSession()">New Session</button>
@@ -241,7 +241,7 @@
       <div id="empty">
         <div class="icon">◈</div>
         <div class="label">No clients connected yet</div>
-        <div class="sub">Add ChorusLogger.cs to your Unity scene and press Play</div>
+        <div class="sub">Connect your application and start sending logs</div>
       </div>
       <div id="grid-body"></div>
     </div>

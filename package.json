@@ -1,7 +1,7 @@
 {
   "name": "chorus",
   "version": "0.1.0",
-  "description": "Multiplayer log dashboard for Unity + Photon",
+  "description": "Real-time multi-client log viewer and debugging dashboard",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
