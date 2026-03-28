@@ -1,6 +1,8 @@
 # Chorus
 
-Real-time multi-client log viewer and debugging dashboard.
+![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)
+
+Real-time multi-client log viewer.
 
 Chorus helps you visualize and debug logs from multiple application instances simultaneously. It receives log entries over UDP and displays them in a synchronized, color-coded grid view.
 
@@ -16,7 +18,13 @@ Chorus helps you visualize and debug logs from multiple application instances si
 ## Installation
 
 ### Download (Recommended)
-Download the latest release from the [Releases page](https://github.com/rohithkodes/chorus/releases).
+
+Grab the latest release from the [Releases page](https://github.com/rohithkodes/chorus/releases).
+
+| File | Description |
+|------|-------------|
+| `Chorus 1.0.0.exe` | Windows installer |
+| `Chorus 1.0.0-portable.zip` | Portable version — no installation needed, run from anywhere |
 
 ### From Source
 
@@ -100,6 +108,9 @@ To rename a client dynamically (e.g., after authentication):
 ## Integration Examples
 
 ### Unity (C#)
+
+Drop [`integrations/unity/ChorusLogger.cs`](integrations/unity/ChorusLogger.cs) 
+into your project and attach it to a persistent GameObject in your first scene.
 
 ```csharp
 using System.Net;
@@ -216,7 +227,3 @@ logger.error("Connection timeout")
 ## Snap Window
 
 The "snap" feature aligns related log entries from different clients into the same row. Adjust the snap window (in milliseconds) to control how close timestamps need to be for alignment.
-
-## License
-
-MIT

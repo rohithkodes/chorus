@@ -25,6 +25,13 @@ function createWindow() {
 
   // ── UDP Server ───────────────────────────────────────────────────────────────
   const server = dgram.createSocket("udp4");
+  let serverClosed = false;
+
+  function closeServer() {
+    if (serverClosed) return;
+    serverClosed = true;
+    try { server.close(); } catch (_) { }
+  }
 
   server.on("message", (msg) => {
     try {
@@ -35,14 +42,14 @@ function createWindow() {
 
   server.on("error", (err) => {
     console.error("[Chorus] UDP error:", err.message);
-    server.close();
+    closeServer();
   });
 
   server.bind(UDP_PORT, () => {
     console.log(`[Chorus] Listening on UDP port ${UDP_PORT}`);
   });
 
-  win.on("closed", () => server.close());
+  win.on("closed", () => closeServer());
 
   // ── Save session ─────────────────────────────────────────────────────────────
   ipcMain.handle("save-session", async (_event, sessionData) => {
@@ -78,7 +85,6 @@ function createWindow() {
     if (canceled || !filePaths.length) return null;
 
     return filePaths.map((fp) => ({
-      // Filename without extension becomes the clientId
       clientId: path.basename(fp, path.extname(fp)),
       content: fs.readFileSync(fp, "utf8"),
     }));
