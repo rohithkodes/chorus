@@ -15,6 +15,10 @@ Chorus helps you visualize and debug logs from multiple application instances si
 - **Session management** - Save and load debugging sessions
 - **Browser log import** - Import Chrome DevTools log exports
 
+## Demo
+
+https://github.com/user-attachments/assets/dbcac724-9957-46ba-bcb6-05024c71eabd
+
 ## Installation
 
 ### Download (Recommended)
