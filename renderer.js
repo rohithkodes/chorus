@@ -130,7 +130,7 @@ function placeEntryInRow(entry) {
 }
 
 // ── Snap key extraction ───────────────────────────────────────────────────────
-var PS_PREFIX_RE = /^\[PS:[A-Z]+\]\s+(\S+)(.*)/;
+var CHORUS_PREFIX_RE = /^\[Chorus:[A-Za-z]+\]\s+(\S+)(.*)/i;
 var KV_RE = /([\w]+)=([^\s|]+)/g;
 var IGNORED_KEYS = { t: true };
 
@@ -141,7 +141,7 @@ var SNAP_BLOCKLIST = {
 };
 
 function extractSnapKey(message) {
-    var m = message.match(PS_PREFIX_RE);
+    var m = message.match(CHORUS_PREFIX_RE);
     if (!m) return null;
 
     var eventName = m[1];
@@ -349,12 +349,12 @@ var TAG_COLORS = {
     'INIT': '#34d399',
     'RECONNECT': '#fb923c',
 };
-var TAG_RE = /^\[PS:([A-Z]+)\]\s*/;
+var TAG_RE = /^\[Chorus:([A-Za-z]+)\]\s*/i;
 var TIMESTAMP_RE = /\s*\|\s*t=[\d.]+$/;
 
 function getTagColor(message) {
     var m = message.match(TAG_RE);
-    return m ? (TAG_COLORS[m[1]] || null) : null;
+    return m ? (TAG_COLORS[m[1].toUpperCase()] || null) : null;
 }
 
 function stripTagsForDisplay(message) {
@@ -671,7 +671,7 @@ function classifyLogType(message) {
 
 function classifyEventType(message) {
     var lower = message.toLowerCase();
-    if (message.match(/^\[PS:[A-Z]+\]/)) {
+    if (message.match(/^\[Chorus:[A-Za-z]+\]/i)) {
         if (lower.includes('error') || lower.includes('exception')) return 'error';
         if (lower.includes('warning') || lower.includes('warn')) return 'warning';
         return 'network';
